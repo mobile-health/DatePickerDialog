@@ -28,6 +28,10 @@ open class DatePickerDialog: UIView {
     private var callback: DatePickerCallback?
     var showCancelButton: Bool = false
     var locale: Locale?
+    
+    // MARK: - Validate Hour
+    var minimumHour: Int = 0
+    var maximumHour: Int = 24
 
     private var textColor: UIColor!
     private var buttonColor: UIColor!
@@ -97,6 +101,7 @@ open class DatePickerDialog: UIView {
         cancelButtonTitle: String = "Cancel",
         defaultDate: Date = Date(),
         minimumDate: Date? = nil, maximumDate: Date? = nil,
+        minimumHour: Int? = nil, maximumHour: Int? = nil,
         datePickerMode: UIDatePicker.Mode = .dateAndTime,
         callback: @escaping DatePickerCallback
     ) {
@@ -110,6 +115,8 @@ open class DatePickerDialog: UIView {
         self.datePicker.date = self.defaultDate ?? Date()
         self.datePicker.maximumDate = maximumDate
         self.datePicker.minimumDate = minimumDate
+        self.minimumHour = minimumHour ?? 0
+        self.maximumHour = maximumHour ?? 23
         if let locale = self.locale { self.datePicker.locale = locale }
 
         if #available(iOS 13.4, *) { datePicker.preferredDatePickerStyle = .wheels }
@@ -242,6 +249,7 @@ open class DatePickerDialog: UIView {
         datePicker.autoresizingMask = .flexibleRightMargin
         datePicker.frame.size.width = 300
         datePicker.frame.size.height = 216
+        datePicker.addTarget(self, action: #selector(dateDidChanged), for: .valueChanged)
         return datePicker
     }
 
@@ -314,5 +322,17 @@ open class DatePickerDialog: UIView {
         super.traitCollectionDidChange(previousTraitCollection)
         container?.layer.borderColor = Colors.separator.cgColor
         gradient.colors = Colors.gradientBackground
+    }
+    
+    @objc private func dateDidChanged(_ picker: UIDatePicker) {
+        let date = picker.date
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: date)
+        let minute = calendar.component(.minute, from: date)
+        if hour < minimumHour {
+            datePicker.setDate(calendar.date(byAdding: .hour, value: minimumHour - hour, to: date)!, animated: true)
+        } else if hour >= maximumHour {
+            datePicker.setDate(calendar.date(byAdding: DateComponents(hour: maximumHour - hour, minute: -minute), to: date)!, animated: true)
+        }
     }
 }
